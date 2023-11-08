@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ApiCatalogo.Models;
 //iniciando o projeto no git e enviando
+//teste
 
 [Table("Categorias")]
 public class Categoria
