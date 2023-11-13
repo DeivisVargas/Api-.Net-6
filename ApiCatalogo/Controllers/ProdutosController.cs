@@ -20,28 +20,71 @@ namespace ApiCatalogo.Controllers
         }
 
 
+        [HttpGet]
+        [Route("categorias")]
+        public ActionResult<IEnumerable<Produto>> GetCategoriaProdutos()
+        {
+            try
+            {
+                //.AsNoTracking() melhora a perfomace mas so posso fazer se tiver a certeza 
+                //que não vai existir alteração, somente consulta 
+                return _context.Produtos.Include(p => p.Categoria).AsNoTracking().ToList();
+            }
+
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
+
+            }
+        }
+
+
         //IEnumerable interface que permite apenas leitura 
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produtos = _context.Produtos.ToList();
-            if(produtos is null)
+            try
             {
-                return NotFound("Produtos não encontrados");
+                var produtos = _context.Produtos.ToList();
+                if (produtos is null)
+                {
+                    return NotFound("Produtos não encontrados");
+                }
+                return produtos;
             }
-            return produtos;
+            
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
+
+            }
         }
 
         //rota de pesquisa de produtos por id definindo inteiro 
         [HttpGet("{id:int}" , Name ="ObterProduto")] // rota nomeada 
         public ActionResult<Produto> Get(int id)
         {
-            var produto = _context.Produtos.FirstOrDefault( p => p.ProdutoId == id);
-            if (produto is null)
+            try
             {
-                return NotFound("Produto não encontrado");
+                var produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
+                if (produto is null)
+                {
+                    return NotFound("Produto não encontrado");
+                }
+                return produto;
             }
-            return produto;
+            
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
+
+            }
         }
 
 
@@ -49,23 +92,33 @@ namespace ApiCatalogo.Controllers
         [HttpPost]
         public ActionResult Post(Produto produto)
         {
-            if (produto is null)
-                return BadRequest();
+            try
+            {
+                if (produto is null)
+                    return BadRequest();
 
-            //espera receber os dados no padrão do modelo
-            _context.Produtos.Add(produto); //inclui no contexto sem inserir no banco
-            _context.SaveChanges(); // sauva na tabela do banco 
+                //espera receber os dados no padrão do modelo
+                _context.Produtos.Add(produto); //inclui no contexto sem inserir no banco
+                _context.SaveChanges(); // salva na tabela do banco 
 
-            //retorna status 201 e chama a rota de consultar ObterProduto por id
-            //para devolver os dados do produto 
-            return new CreatedAtRouteResult
-                (
-                    "ObterProduto",
-                    new { id = produto.ProdutoId } ,
-                    produto
-                );
+                //retorna status 201 e chama a rota de consultar ObterProduto por id
+                //para devolver os dados do produto 
+                return new CreatedAtRouteResult
+                    (
+                        "ObterProduto",
+                        new { id = produto.ProdutoId },
+                        produto
+                    );
+            }
+            
 
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
 
+            }
 
         }
 
@@ -74,36 +127,58 @@ namespace ApiCatalogo.Controllers
         [HttpPut("{id:int}", Name = "AlterarProduto")]
         public ActionResult Put(int id ,Produto produto)
         {
-            if ( id != produto.ProdutoId)
+            try
             {
-                return BadRequest();
+                if (id != produto.ProdutoId)
+                {
+                    return BadRequest();
+                }
+
+                //fala ao contexto que o produto vai ser alterado 
+                //no contexto desconectado
+                _context.Entry(produto).State = EntityState.Modified;
+                _context.SaveChanges(); //salva os dados
+
+                //return NoContent(); retorna um ok mas sem os dados do produto
+
+                //retorna os dados do produto
+                return Ok(produto);
             }
+            
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
 
-            //fala ao contexto que o produto vai ser alterado 
-            //no contexto desconectado
-            _context.Entry(produto).State = EntityState.Modified;
-            _context.SaveChanges(); //salva os dados
-
-            //return NoContent(); retorna um ok mas sem os dados do produto
-
-            //retorna os dados do produto
-            return Ok(produto);
+            }
 
         }
 
         [HttpDelete("{id:int}", Name ="DeletarProduto")]
         public ActionResult Delete(int id)
         {
-            var produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
-            if (produto is null)
-                return NotFound("Produto não localizado...");
+            try
+            {
+                var produto = _context.Produtos.FirstOrDefault(p => p.ProdutoId == id);
+                if (produto is null)
+                    return NotFound($"Produto de id = {id} não localizado...");
 
-            _context.Produtos.Remove(produto);
-            _context.SaveChanges();
+                _context.Produtos.Remove(produto);
+                _context.SaveChanges();
 
-            return Ok(produto);
-        
-        
+                return Ok(produto);
+            }
+            
+            catch (Exception)
+            {
+                return StatusCode(
+                    StatusCodes.Status500InternalServerError,
+                    "Problema ao tratar solicitação");
+
+            }
+
+
         }
         
     }
